@@ -224,22 +224,29 @@ func main() {
 		setupLog.Error(err, "unable to create cache directory for unpacking")
 		os.Exit(1)
 	}
-	unpacker := &source.ContainersImageRegistry{
-		BaseCachePath: unpackCacheBasePath,
-		SourceContextFunc: func(logger logr.Logger) (*types.SystemContext, error) {
-			srcContext := &types.SystemContext{
-				DockerCertPath: caCertDir,
-				OCICertPath:    caCertDir,
-			}
-			if _, err := os.Stat(authFilePath); err == nil && globalPullSecretKey != nil {
-				logger.Info("using available authentication information for pulling image")
-				srcContext.AuthFilePath = authFilePath
-			} else if os.IsNotExist(err) {
-				logger.Info("no authentication information found for pulling image, proceeding without auth")
-			} else {
-				return nil, fmt.Errorf("could not stat auth file, error: %w", err)
-			}
-			return srcContext, nil
+	unpacker := &source.MultiSourceUnpacker{
+		Router: map[v1alpha1.SourceType]source.Unpacker{
+			v1alpha1.SourceTypeImage: &source.ContainersImageRegistry{
+				BaseCachePath: unpackCacheBasePath,
+				SourceContextFunc: func(logger logr.Logger) (*types.SystemContext, error) {
+					srcContext := &types.SystemContext{
+						DockerCertPath: caCertDir,
+						OCICertPath:    caCertDir,
+					}
+					if _, err := os.Stat(authFilePath); err == nil && globalPullSecretKey != nil {
+						logger.Info("using available authentication information for pulling image")
+						srcContext.AuthFilePath = authFilePath
+					} else if os.IsNotExist(err) {
+						logger.Info("no authentication information found for pulling image, proceeding without auth")
+					} else {
+						return nil, fmt.Errorf("could not stat auth file, error: %w", err)
+					}
+					return srcContext, nil
+				},
+			},
+			v1alpha1.SourceTypeWeb: &source.WebRegistry{
+				BaseCachePath: unpackCacheBasePath,
+			},
 		},
 	}
 

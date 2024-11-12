@@ -29,6 +29,7 @@ type AvailabilityMode string
 
 const (
 	SourceTypeImage SourceType = "Image"
+	SourceTypeWeb   SourceType = "Web"
 
 	TypeProgressing = "Progressing"
 	TypeServing     = "Serving"
@@ -229,7 +230,6 @@ type ClusterCatalogURLs struct {
 // CatalogSource is a discriminated union of possible sources for a Catalog.
 // CatalogSource contains the sourcing information for a Catalog
 // +union
-// +kubebuilder:validation:XValidation:rule="has(self.type) && self.type == 'Image' ? has(self.image) : !has(self.image)",message="image is required when source type is Image, and forbidden otherwise"
 type CatalogSource struct {
 	// type is a reference to the type of source the catalog is sourced from.
 	// type is required.
@@ -240,19 +240,21 @@ type CatalogSource struct {
 	// When using an image source, the image field must be set and must be the only field defined for this type.
 	//
 	// +unionDiscriminator
-	// +kubebuilder:validation:Enum:="Image"
+	// +kubebuilder:validation:Enum:="Image";"Web"
 	// +kubebuilder:validation:Required
 	Type SourceType `json:"type"`
 	// image is used to configure how catalog contents are sourced from an OCI image.
 	// This field is required when type is Image, and forbidden otherwise.
 	// +optional
 	Image *ImageSource `json:"image,omitempty"`
+
+	// +optional
+	Web *WebSource `json:"web,omitempty"`
 }
 
 // ResolvedCatalogSource is a discriminated union of resolution information for a Catalog.
 // ResolvedCatalogSource contains the information about a sourced Catalog
 // +union
-// +kubebuilder:validation:XValidation:rule="has(self.type) && self.type == 'Image' ? has(self.image) : !has(self.image)",message="image is required when source type is Image, and forbidden otherwise"
 type ResolvedCatalogSource struct {
 	// type is a reference to the type of source the catalog is sourced from.
 	// type is required.
@@ -262,12 +264,16 @@ type ResolvedCatalogSource struct {
 	// When set to "Image", information about the resolved image source will be set in the 'image' field.
 	//
 	// +unionDiscriminator
-	// +kubebuilder:validation:Enum:="Image"
+	// +kubebuilder:validation:Enum:="Image";"Web"
 	// +kubebuilder:validation:Required
 	Type SourceType `json:"type"`
 	// image is a field containing resolution information for a catalog sourced from an image.
 	// This field must be set when type is Image, and forbidden otherwise.
+	// +optional
 	Image *ResolvedImageSource `json:"image"`
+
+	// +optional
+	Web *ResolvedWebSource `json:"web,omitempty"`
 }
 
 // ResolvedImageSource provides information about the resolved source of a Catalog sourced from an image.
@@ -284,6 +290,13 @@ type ResolvedImageSource struct {
 	// +kubebuilder:validation:XValidation:rule="self.find('(@.*:)') != \"\" ? self.find(':.*$').substring(1).size() >= 32 : true",message="digest is not valid. the encoded string must be at least 32 characters"
 	// +kubebuilder:validation:XValidation:rule="self.find('(@.*:)') != \"\" ? self.find(':.*$').matches(':[0-9A-Fa-f]*$') : true",message="digest is not valid. the encoded string must only contain hex characters (A-F, a-f, 0-9)"
 	Ref string `json:"ref"`
+}
+
+type ResolvedWebSource struct {
+	URL string `json:"url"`
+
+	// +optional
+	Digest string `json:"digest"`
 }
 
 // ImageSource enables users to define the information required for sourcing a Catalog from an OCI image
@@ -347,6 +360,15 @@ type ImageSource struct {
 	// pollIntervalMinutes can not be specified when ref is a digest-based reference.
 	//
 	// When omitted, the image will not be polled for new content.
+	// +kubebuilder:validation:Minimum:=1
+	// +optional
+	PollIntervalMinutes *int `json:"pollIntervalMinutes,omitempty"`
+}
+
+type WebSource struct {
+	// +kubebuilder:validation:Required
+	URL string `json:"url"`
+
 	// +kubebuilder:validation:Minimum:=1
 	// +optional
 	PollIntervalMinutes *int `json:"pollIntervalMinutes,omitempty"`

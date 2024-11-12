@@ -229,15 +229,21 @@ spec:
                       When using an image source, the image field must be set and must be the only field defined for this type.
                     enum:
                     - Image
+                    - Web
                     type: string
+                  web:
+                    properties:
+                      pollIntervalMinutes:
+                        minimum: 1
+                        type: integer
+                      url:
+                        type: string
+                    required:
+                    - url
+                    type: object
                 required:
                 - type
                 type: object
-                x-kubernetes-validations:
-                - message: image is required when source type is Image, and forbidden
-                    otherwise
-                  rule: 'has(self.type) && self.type == ''Image'' ? has(self.image)
-                    : !has(self.image)'
             required:
             - source
             type: object
@@ -390,16 +396,20 @@ spec:
                       When set to "Image", information about the resolved image source will be set in the 'image' field.
                     enum:
                     - Image
+                    - Web
                     type: string
+                  web:
+                    properties:
+                      digest:
+                        type: string
+                      url:
+                        type: string
+                    required:
+                    - url
+                    type: object
                 required:
-                - image
                 - type
                 type: object
-                x-kubernetes-validations:
-                - message: image is required when source type is Image, and forbidden
-                    otherwise
-                  rule: 'has(self.type) && self.type == ''Image'' ? has(self.image)
-                    : !has(self.image)'
               urls:
                 description: urls contains the URLs that can be used to access the
                   catalog.

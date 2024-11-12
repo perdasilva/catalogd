@@ -288,6 +288,12 @@ func nextPollResult(lastSuccessfulPoll time.Time, catalog *catalogdv1.ClusterCat
 			jitteredDuration := wait.Jitter(pollDuration, requeueJitterMaxFactor)
 			requeueAfter = time.Until(lastSuccessfulPoll.Add(jitteredDuration))
 		}
+	case v1alpha1.SourceTypeWeb:
+		if catalog.Spec.Source.Web != nil && catalog.Spec.Source.Web.PollIntervalMinutes != nil {
+			pollDuration := time.Duration(*catalog.Spec.Source.Web.PollIntervalMinutes) * time.Minute
+			jitteredDuration := wait.Jitter(pollDuration, requeueJitterMaxFactor)
+			requeueAfter = time.Until(lastSuccessfulPoll.Add(jitteredDuration))
+		}
 	}
 	return ctrl.Result{RequeueAfter: requeueAfter}
 }

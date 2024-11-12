@@ -5,7 +5,7 @@ metadata:
 spec:
   priority: 0
   source:
-    type: Image
-    image:
-      pollIntervalMinutes: 1440
-      ref: quay.io/operatorhubio/catalog:latest
+    type: Web
+    web:
+      pollIntervalMinutes: 300
+      url: https://perdasilva.github.io/test-catalog
